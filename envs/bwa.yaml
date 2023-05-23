@@ -1,0 +1,10 @@
+channels:
+    - bioconda
+    - conda-forge
+    - r
+dependencies:
+    - bwa=0.7.17
+    - samtools=1.13
+    - picard=2.27
+    - r-tidyverse
+    - r-base

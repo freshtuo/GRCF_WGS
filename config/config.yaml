@@ -1,0 +1,48 @@
+# input fastq files
+read1:
+    PM1875_Z1_Case_WGS: /gc6/seq/tmp/fastq/221116_A00814_0679_BHCW2KDSX5/PM1875_Z1_Case_WGS_S5_L000_R1_001.fastq.gz
+read2:
+    PM1875_Z1_Case_WGS: /gc6/seq/tmp/fastq/221116_A00814_0679_BHCW2KDSX5/PM1875_Z1_Case_WGS_S5_L000_R2_001.fastq.gz
+
+# project name (use to nameoutput folder)
+project: 'Elemento-MS-13269_221116'
+
+# downsample fastq
+rseed: 98
+nreads: 1000000
+
+# cutadapt parameters
+overlap: 3
+errate: 0.1
+minlen: 50
+qscore: 10
+adapter3: AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC
+adapter5: AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT
+
+# BWA parameters
+#bwaidx: /data/gc-core/database/Refs/Homo_sapiens/Ensembl/GRCh38/Sequence/BWAIndex/GRCh38
+bwaidx: /data/gc-core/yit2001/Refs/Homo_sapiens/UCSC/hg38/Sequence/BWA_index/Homo_sapiens_assembly38.fasta
+
+# Picard parameters
+#refdict: /data/gc-core/database/Refs/Homo_sapiens/Ensembl/GRCh38/Sequence/WholeGenomeFasta/genome.dict
+refdict: /data/gc-core/yit2001/Refs/Homo_sapiens/UCSC/hg38/Sequence/WholeGenomeFasta/Homo_sapiens_assembly38.dict
+
+# genome assembly
+refver: hg38
+
+# GATK
+# dbsnp
+snpdb: /data/gc-core/yit2001/Refs/Homo_sapiens/UCSC/hg38/resource/Homo_sapiens_assembly38.dbsnp138.vcf
+
+#refseq: /data/gc-core/database/Refs/Homo_sapiens/Ensembl/GRCh38/Sequence/WholeGenomeFasta/genome.fa
+refseq: /data/gc-core/yit2001/Refs/Homo_sapiens/UCSC/hg38/Sequence/WholeGenomeFasta/Homo_sapiens_assembly38.fasta
+
+# AF only gnomad
+gnomad: /data/gc-core/yit2001/Refs/Homo_sapiens/UCSC/hg38/resource/af-only-gnomad.hg38.vcf.gz
+
+# small exac common
+exac: /data/gc-core/yit2001/Refs/Homo_sapiens/UCSC/hg38/resource/small_exac_common_3.hg38.vcf.gz
+
+# funcotator data sources path
+funco: /data/gc-core/yit2001/Refs/Homo_sapiens/UCSC/hg38/resource/funcotator_dataSources.v1.7.20200521s/
+
