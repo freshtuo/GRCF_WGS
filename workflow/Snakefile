@@ -13,6 +13,7 @@ def get_bam_qc_tempdir(wildcards):
 
 rule all:
     input:
+        ###rename=expand("results/{project}/rename_fastq/{sample}_R1.fastq.gz", project=config["project"], sample=config["read1"]),
         downfq=expand("results/{project}/downsample_fastq/{sample}_R1.fastq.gz", project=config["project"], sample=config["read1"]),
         rawqc=expand("results/{project}/raw_fastq_qc/{sample}_R1_fastqc.html", project=config["project"], sample=config["read1"]),
         trimqc=expand("results/{project}/trim_fastq_qc/{sample}_R1.trimmed_fastqc.html", project=config["project"], sample=config["read1"]),
@@ -21,6 +22,7 @@ rule all:
         rawstat=expand("results/{project}/bam_qc/{sample}.raw.bam.flagstat.txt", project=config["project"], sample=config["read1"]),
         rawmetric=expand("results/{project}/gatk_raw_wgs_metrics/{sample}.raw_wgs_metrics.txt", project=config["project"], sample=config["read1"]),
         metric=expand("results/{project}/gatk_wgs_metrics/{sample}.wgs_metrics.txt", project=config["project"], sample=config["read1"]),
+        multiqc=expand("results/{project}/multiqc/multiqc_report.html", project=config["project"]),
 
 rule rename_fastq:
     input:
@@ -30,8 +32,14 @@ rule rename_fastq:
         read1=temp("results/{project}/rename_fastq/{sample}_R1.fastq.gz"),
         read2=temp("results/{project}/rename_fastq/{sample}_R2.fastq.gz")
     shell:
-        "cp {input.read1} {output.read1}; "
-        "cp {input.read2} {output.read2}"
+        "outdir=`dirname {output.read1}`; "
+        "fq1=`basename {output.read1}`; "
+        "fq2=`basename {output.read2}`; "
+        "cd ${{outdir}}; "
+        "ln -s {input.read1} ${{fq1}}; "
+        "ln -s {input.read2} ${{fq2}}; "
+        #"cp {input.read1} {output.read1}; "
+        #"cp {input.read2} {output.read2}"
 
 rule downsample_fastq:
     input:
@@ -46,7 +54,7 @@ rule downsample_fastq:
     log:
         read1="results/{project}/logs/downsample_fastq/{sample}_R1.log",
         read2="results/{project}/logs/downsample_fastq/{sample}_R2.log"
-    threads: 4
+    threads: 8
     conda:
         "../envs/seqtk.yaml"
     shell:
@@ -151,6 +159,7 @@ rule mark_dup:
         csort="results/{project}/logs/mark_dup/picard.osort.{sample}.log"
     conda:
         "../envs/bwa.yaml"
+    threads: 4
     shell:
         """picard ReorderSam INPUT={input.bam} OUTPUT={output.reorder} SEQUENCE_DICTIONARY={params.refdict} VALIDATION_STRINGENCY=LENIENT TMP_DIR={output.tmp} >{log.reorder} 2>&1; """
         """picard SortSam SORT_ORDER=queryname INPUT={output.reorder} OUTPUT={output.qsort} VALIDATION_STRINGENCY=LENIENT TMP_DIR={output.tmp} >{log.qsort} 2>&1; """
@@ -176,6 +185,7 @@ rule bam_qc:
         picard="results/{project}/logs/bam_qc/picard.insertsize.{sample}.log"
     conda:
         "../envs/bwa.yaml"
+    threads: 4
     shell:
         """samtools flagstat {input.rawbam} >{output.rawstat} 2>{log.samtools}; """
         """samtools flagstat {input.mdbam} >{output.mdstat} 2>>{log.samtools}; """
@@ -196,6 +206,7 @@ rule gatk_raw_wgs_metrics:
         "results/{project}/logs/gatk_raw_wgs_metrics/{sample}.log"
     conda:
         "../envs/gatk.yaml"
+    threads: 4
     shell:
         """mkdir -p {output.tmp}; """
         """gatk CollectRawWgsMetrics --TMP_DIR {output.tmp} -I {input.bam} -O {output.metric} -R {params.refseq} --INCLUDE_BQ_HISTOGRAM true >{log} 2>&1; """
@@ -215,7 +226,28 @@ rule gatk_wgs_metrics:
         "results/{project}/logs/gatk_wgs_metrics/{sample}.log"
     conda:
         "../envs/gatk.yaml"
+    threads: 4
     shell:
         """mkdir -p {output.tmp}; """
         """gatk CollectWgsMetrics --TMP_DIR {output.tmp} -I {input.bam} -O {output.metric} -R {params.refseq} >{log} 2>&1; """
+
+rule multiqc:
+    input:
+        rawqc=expand("results/{project}/raw_fastq_qc/{sample}_R1_fastqc.html", project=config["project"], sample=config["read1"]),
+        trimqc=expand("results/{project}/trim_fastq_qc/{sample}_R1.trimmed_fastqc.html", project=config["project"], sample=config["read1"]),
+        bamqc=expand("results/{project}/bam_qc/{sample}.insert_size_metrics.txt", project=config["project"], sample=config["read1"]),
+        metric=expand("results/{project}/gatk_wgs_metrics/{sample}.wgs_metrics.txt", project=config["project"], sample=config["read1"]),
+        rawmetric=expand("results/{project}/gatk_raw_wgs_metrics/{sample}.raw_wgs_metrics.txt", project=config["project"], sample=config["read1"])
+    output:
+        html=expand("results/{project}/multiqc/multiqc_report.html", project=config["project"])
+    log:
+        expand("results/{project}/logs/multiqc/multiqc.log", project=config["project"])
+    conda:
+        "../envs/multiqc.yaml"
+    shell:
+        """multiqc results/{project}/raw_fastq_qc/ results/{project}/trim_fastq_qc/ """
+        """results/{project}/bam_qc/ results/{project}/gatk_raw_wgs_metrics/ results/{project}/gatk_wgs_metrics/ """
+        """--ignore "*insert_size_histogram.pdf" --ignore "*.html" """
+        """--ignore "*raw.bam.flagstat.txt" """
+        """-o results/{project}/multiqc >{log} 2>&1"""
 
